@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
@@ -11,9 +12,16 @@ export const CartProvider = ({ children }) => {
   const updateTimeoutRef = useRef({});
   const lastUpdatedRef = useRef({});
   const isFetchingRef = useRef(false);
+  const { isAuthenticated, user } = useAuth();
 
   // Fetch cart from backend
   const fetchCart = useCallback(async (silent = false) => {
+    // Don't fetch if user is not authenticated
+    if (!isAuthenticated) {
+      setCart(null);
+      return;
+    }
+
     // Prevent multiple simultaneous fetches
     if (isFetchingRef.current) return;
     
@@ -33,15 +41,34 @@ export const CartProvider = ({ children }) => {
       // Only set error if it's not a 401 (user not logged in)
       if (err.response?.status !== 401) {
         setError(err.response?.data?.message || 'Failed to fetch cart');
+      } else {
+        // Clear cart on 401
+        setCart(null);
       }
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, []);
+  }, [isAuthenticated]);
+
+  // Fetch cart when component mounts or authentication changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCart(true);
+    } else {
+      // Clear cart when user logs out
+      setCart(null);
+      setError(null);
+    }
+  }, [isAuthenticated, fetchCart]);
 
   // Add to cart with optimistic update
   const addToCart = useCallback(async (productId, quantity = 1) => {
+    if (!isAuthenticated) {
+      setError('Please login to add items to cart');
+      return { success: false, error: 'Please login to add items to cart' };
+    }
+
     try {
       setError(null);
       
@@ -92,10 +119,14 @@ export const CartProvider = ({ children }) => {
       await fetchCart(true);
       return { success: false, error: errorMsg };
     }
-  }, [fetchCart]);
+  }, [fetchCart, isAuthenticated]);
 
   // Update quantity with stable optimistic updates
   const updateQuantity = useCallback(async (productId, quantity) => {
+    if (!isAuthenticated) {
+      return { success: false };
+    }
+
     setError(null);
 
     if (!cart) return { success: false };
@@ -160,10 +191,14 @@ export const CartProvider = ({ children }) => {
     }, 400);
 
     return { success: true };
-  }, [cart, fetchCart]);
+  }, [cart, fetchCart, isAuthenticated]);
 
   // Remove item with optimistic update
   const removeFromCart = useCallback(async (productId) => {
+    if (!isAuthenticated) {
+      return { success: false };
+    }
+
     setError(null);
     const previousCart = cart;
 
@@ -191,10 +226,14 @@ export const CartProvider = ({ children }) => {
       setError(err.response?.data?.message || 'Failed to remove item');
       return { success: false };
     }
-  }, [cart]);
+  }, [cart, isAuthenticated]);
 
   // Clear cart
   const clearCartItems = useCallback(async () => {
+    if (!isAuthenticated) {
+      return { success: false };
+    }
+
     setError(null);
     const previousCart = cart;
     
@@ -217,7 +256,7 @@ export const CartProvider = ({ children }) => {
       setError(err.response?.data?.message || 'Failed to clear cart');
       return { success: false };
     }
-  }, [cart]);
+  }, [cart, isAuthenticated]);
 
   // Cleanup timeouts
   useEffect(() => {

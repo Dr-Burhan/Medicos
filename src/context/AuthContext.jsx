@@ -102,26 +102,33 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      // Call backend logout to clear HTTP-only cookie
+      
+      // First, clear local state immediately
+      setUser(null);
+      setIsAuthenticated(false);
+      
+      // Then call backend logout to clear HTTP-only cookie
       await axios.post(
         `${API_BASE_URL}/user/logout`,
         {},
         { withCredentials: true }
       );
+      
       toast.success("Logged out successfully!", {
         position: "top-right",
         autoClose: 3000,
       });
       
+      return { success: true };
     } catch (error) {
       console.error('Logout error:', error);
-      toast.error("Error during logout. Please try again.", {
+      // Even if backend call fails, we've already cleared local state
+      toast.error("Error during logout. You have been logged out locally.", {
         position: "top-right",
         autoClose: 3000,
       });
+      return { success: false };
     } finally {
-      setUser(null);
-      setIsAuthenticated(false);
       setLoading(false);
     }
   };

@@ -14,18 +14,17 @@ const Navbar = ({ onCartClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user, isAuthenticated } = useAuth();
   const { openCart } = useCartSidebar();
-  const { user } = useAuth();
   const { cartItemsCount } = useCart();
-  const hasUser = user !== null && user !== undefined;
+  const hasUser = isAuthenticated && user !== null;
 
-const menuItems = [
-  { label: "Home", path: "/" },
-  { label: "Collections", path: "/collections" },
-  { label: "About", path: "/about" },
-  { label: "Contact", path: "/contact" },
-];
+  const menuItems = [
+    { label: "Home", path: "/" },
+    { label: "Collections", path: "/collections" },
+    { label: "About", path: "/about" },
+    { label: "Contact", path: "/contact" },
+  ];
 
   const toggleMenu = () => setIsOpen((prev) => !prev);
 
@@ -49,6 +48,12 @@ const menuItems = [
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  const handleLogout = async () => {
+    const result = await logout();
+    toggleMenu(); // Close the mobile menu
+    navigate("/");
+  };
 
   return (
     <>
@@ -119,17 +124,16 @@ const menuItems = [
             {/* Desktop Menu - Hidden on Mobile and Tablet */}
             <div className="hidden lg:flex items-center gap-4 xl:gap-8">
               {menuItems.map((item) => (
-  <motion.button
-    key={item.label}
-    onClick={() => navigate(item.path)}
-    className="font-medium relative group text-sm xl:text-base transition-colors text-black hover:text-blue-600 whitespace-nowrap"
-    whileHover={{ scale: 1.05 }}
-  >
-    {item.label}
-    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300" />
-  </motion.button>
-))}
-
+                <motion.button
+                  key={item.label}
+                  onClick={() => navigate(item.path)}
+                  className="font-medium relative group text-sm xl:text-base transition-colors text-black hover:text-blue-600 whitespace-nowrap"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  {item.label}
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300" />
+                </motion.button>
+              ))}
             </div>
 
             {/* Desktop Right Section - Hidden on Mobile, Shown on Tablet */}
@@ -281,10 +285,13 @@ const menuItems = [
                 ) : (
                   <div className="p-4 sm:p-5 bg-gray-50 border-b border-gray-200">
                     <button
-                     onClick={()=> navigate('/login')}
-                    className="w-full py-2.5 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                      onClick={() => {
+                        navigate('/login');
+                        toggleMenu();
+                      }}
+                      className="w-full py-2.5 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
                       Sign In
-
                     </button>
                   </div>
                 )}
@@ -307,20 +314,19 @@ const menuItems = [
                     {/* Main Navigation */}
                     <div className="mb-2">
                       {menuItems.map((item) => (
-  <motion.button
-    key={item.label}
-    onClick={() => {
-      navigate(item.path);
-      toggleMenu();
-    }}
-    className="flex items-center justify-between py-3 px-3 sm:px-4 text-sm sm:text-base text-gray-900 font-medium hover:bg-gray-100 rounded-lg transition-colors group w-full text-left"
-    whileHover={{ x: 5 }}
-  >
-    <span>{item.label}</span>
-    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
-  </motion.button>
-))}
-
+                        <motion.button
+                          key={item.label}
+                          onClick={() => {
+                            navigate(item.path);
+                            toggleMenu();
+                          }}
+                          className="flex items-center justify-between py-3 px-3 sm:px-4 text-sm sm:text-base text-gray-900 font-medium hover:bg-gray-100 rounded-lg transition-colors group w-full text-left"
+                          whileHover={{ x: 5 }}
+                        >
+                          <span>{item.label}</span>
+                          <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                        </motion.button>
+                      ))}
                     </div>
 
                     {/* Admin Section - Show if user is admin */}
@@ -332,38 +338,44 @@ const menuItems = [
                             Admin Management
                           </p>
                           
-                          <motion.a
-                            href="/admin/users"
-                            className="flex items-center gap-3 py-3 px-3 sm:px-4 text-sm sm:text-base text-gray-900 font-medium hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors group"
+                          <motion.button
+                            onClick={() => {
+                              navigate('/admin/users');
+                              toggleMenu();
+                            }}
+                            className="flex items-center gap-3 py-3 px-3 sm:px-4 text-sm sm:text-base text-gray-900 font-medium hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors group w-full text-left"
                             whileHover={{ x: 5 }}
-                            onClick={toggleMenu}
                           >
                             <Users className="w-5 h-5 text-blue-600" />
                             <span className="flex-1">User Management</span>
                             <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                          </motion.a>
+                          </motion.button>
 
-                          <motion.a
-                            href="/admin/products"
-                            className="flex items-center gap-3 py-3 px-3 sm:px-4 text-sm sm:text-base text-gray-900 font-medium hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors group"
+                          <motion.button
+                            onClick={() => {
+                              navigate('/admin/products');
+                              toggleMenu();
+                            }}
+                            className="flex items-center gap-3 py-3 px-3 sm:px-4 text-sm sm:text-base text-gray-900 font-medium hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors group w-full text-left"
                             whileHover={{ x: 5 }}
-                            onClick={toggleMenu}
                           >
                             <Package className="w-5 h-5 text-blue-600" />
                             <span className="flex-1">Product Management</span>
                             <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                          </motion.a>
+                          </motion.button>
 
-                          <motion.a
-                            href="/admin/collections"
-                            className="flex items-center gap-3 py-3 px-3 sm:px-4 text-sm sm:text-base text-gray-900 font-medium hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors group"
+                          <motion.button
+                            onClick={() => {
+                              navigate('/admin/collections');
+                              toggleMenu();
+                            }}
+                            className="flex items-center gap-3 py-3 px-3 sm:px-4 text-sm sm:text-base text-gray-900 font-medium hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors group w-full text-left"
                             whileHover={{ x: 5 }}
-                            onClick={toggleMenu}
                           >
                             <Grid className="w-5 h-5 text-blue-600" />
                             <span className="flex-1">Collection Management</span>
                             <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                          </motion.a>
+                          </motion.button>
                         </div>
                       </>
                     )}
@@ -373,16 +385,18 @@ const menuItems = [
                       <>
                         <div className="my-3 border-t border-gray-200" />
                         <div className="mb-2">
-                          <motion.a
-                            href="/profile"
-                            className="flex items-center gap-3 py-3 px-3 sm:px-4 text-sm sm:text-base text-gray-900 font-medium hover:bg-gray-100 rounded-lg transition-colors group"
+                          <motion.button
+                            onClick={() => {
+                              navigate('/profile');
+                              toggleMenu();
+                            }}
+                            className="flex items-center gap-3 py-3 px-3 sm:px-4 text-sm sm:text-base text-gray-900 font-medium hover:bg-gray-100 rounded-lg transition-colors group w-full text-left"
                             whileHover={{ x: 5 }}
-                            onClick={toggleMenu}
                           >
                             <Settings className="w-5 h-5 text-gray-600" />
                             <span className="flex-1">Account Settings</span>
                             <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                          </motion.a>
+                          </motion.button>
                         </div>
                       </>
                     )}
@@ -393,18 +407,9 @@ const menuItems = [
                 {hasUser && (
                   <div className="p-4 sm:p-5 border-t border-gray-200 bg-gray-50">
                     <button 
-                    onClick={async () => {
-                  await logout();
-                   navigate("/");
-                  if(success){
-                    toast.success("Logged out successfully!", {
-                      position: "top-right",
-                      autoClose: 3000,
-                    });
-                  }
-                   
-      }}
-                    className="w-full py-2.5 px-4 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors">
+                      onClick={handleLogout}
+                      className="w-full py-2.5 px-4 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+                    >
                       Sign Out
                     </button>
                   </div>
