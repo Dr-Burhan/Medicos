@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Package, Tag, Box, Search, Filter, RefreshCw, Eye, Edit, Trash2, MoreVertical, Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from "react-router-dom"
 import { toast } from 'react-toastify';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
 // Configure axios to send cookies
@@ -45,7 +45,7 @@ const ProductImage = ({ image, alt = "Product", size = "medium" }) => {
 export default function ProductManagement() {
   const navigate = useNavigate();
   
-  // ✅ USE AUTH CONTEXT INSTEAD OF MANUAL TOKEN CHECKING
+  // ✅ USE AUTH CONTEXT
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   
   const [products, setProducts] = useState([]);
@@ -131,7 +131,7 @@ export default function ProductManagement() {
     };
   };
 
-  // Fetch all products using axios with cookies
+  // Fetch all products
   const fetchProducts = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/products/get-allproducts`, {
@@ -362,7 +362,6 @@ export default function ProductManagement() {
 
       console.log('=== SUBMITTING PRODUCT ===');
       
-      // ✅ USE AXIOS WITH COOKIES
       const response = await axios.post(`${API_BASE_URL}/products/add-product`, formData, {
         withCredentials: true,
         headers: {
@@ -739,7 +738,6 @@ export default function ProductManagement() {
             </p>
           </div>
 
-          {/* Desktop Admin Badge */}
           <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
             <span className="text-xs lg:text-sm font-medium text-gray-700">
               Admin Panel
@@ -882,7 +880,6 @@ export default function ProductManagement() {
               </div>
             </div>
 
-            {/* Products per page selector */}
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-600">Show:</span>
               <select
@@ -1076,7 +1073,6 @@ export default function ProductManagement() {
                     </div>
                   </div>
 
-                  {/* Mobile Actions Menu */}
                   {showActions === product.id && (
                     <>
                       <div 
@@ -1308,7 +1304,6 @@ export default function ProductManagement() {
                     Product Images (Max 5)
                   </label>
                   
-                  {/* File Input */}
                   <div className="mb-3">
                     <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition">
                       <div className="text-center">
@@ -1326,7 +1321,6 @@ export default function ProductManagement() {
                     </label>
                   </div>
                   
-                  {/* Image Previews */}
                   {newProduct.imagePreviews && newProduct.imagePreviews.length > 0 && (
                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                       {newProduct.imagePreviews.map((preview, index) => (
@@ -1408,7 +1402,7 @@ export default function ProductManagement() {
       {showEditProductModal && editProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8">
-            <div className="p-4 sm:p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
+            <div className="p-4 sm:p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
               <h3 className="text-lg sm:text-xl font-bold text-gray-900">Edit Product</h3>
               <button
                 onClick={() => {
@@ -1525,9 +1519,7 @@ export default function ProductManagement() {
                     Product Images <span className="text-red-500">*</span>
                   </label>
                   
-                  {/* Image Tabs */}
                   <div className="space-y-4">
-                    {/* Existing Images */}
                     {editProduct.images && editProduct.images.length > 0 && (
                       <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                         <div className="flex items-center justify-between mb-3">
@@ -1559,7 +1551,6 @@ export default function ProductManagement() {
                       </div>
                     )}
                     
-                    {/* New Images Preview */}
                     {editProduct.newImagePreviews && editProduct.newImagePreviews.length > 0 && (
                       <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                         <div className="flex items-center justify-between mb-3">
@@ -1595,7 +1586,6 @@ export default function ProductManagement() {
                       </div>
                     )}
                     
-                    {/* File Input */}
                     <label className="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition bg-blue-50/30">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <svg className="w-8 h-8 mb-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1615,7 +1605,6 @@ export default function ProductManagement() {
                     </label>
                   </div>
                   
-                  {/* Progress indicator */}
                   <div className="mt-4 bg-gray-100 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-semibold text-gray-700">Image Count</span>
