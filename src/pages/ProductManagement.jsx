@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Tag, Box, Search, Filter, RefreshCw, Eye, Edit, Trash2, MoreVertical, Plus, X, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from "react-router-dom"
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 
 const ProductImage = ({ image, alt = "Product", size = "medium" }) => {
@@ -67,6 +67,7 @@ export default function ProductManagement() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const [products, setProducts] = useState([]);
   const [collections, setCollections] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -134,15 +135,14 @@ export default function ProductManagement() {
       const token = getCookie('accessToken');
       
       if (!token) {
-        console.log('No token found, redirecting to login');
+        console.log('❌ No token found');
         setUser(null);
         setLoading(false);
-        // Optional: redirect to login page
-        // navigate('/login');
+        setAuthChecked(true);
         return;
       }
       
-      console.log('Token found, verifying with backend...');
+      console.log('🔍 Token found, verifying with backend...');
       
       // ✅ VERIFY TOKEN WITH BACKEND
       const response = await fetch(`${API_BASE_URL}/auth/verify`, {
@@ -154,31 +154,64 @@ export default function ProductManagement() {
         credentials: 'include'
       });
 
+      console.log('📡 Auth verification response status:', response.status);
+
       if (response.ok) {
         const userData = await response.json();
-        console.log('Auth verified:', userData);
+        console.log('✅ Auth verified, user data:', userData);
+        
+        // ✅ FIX: Check user role correctly
+        // Handle different response formats
+        let userObj = null;
+        
+        if (userData.user) {
+          userObj = userData.user;
+        } else if (userData.data && userData.data.user) {
+          userObj = userData.data.user;
+        } else if (userData.role) {
+          // Sometimes the response IS the user object
+          userObj = userData;
+        }
+        
+        console.log('👤 User object:', userObj);
+        console.log('🔑 User role:', userObj?.role);
         
         // Check if user is admin
-        if (userData.user && userData.user.role === 'admin') {
-          setUser(userData.user);
+        if (userObj && userObj.role === 'admin') {
+          setUser(userObj);
           console.log('✅ Admin access granted');
         } else {
-          console.log('❌ User is not admin');
+          console.log('❌ User is not admin. Role:', userObj?.role);
           setUser(null);
+          deleteCookie('accessToken');
         }
       } else {
-        console.log('❌ Token verification failed');
+        console.log('❌ Token verification failed, status:', response.status);
+        
+        // Try to parse error response
+        try {
+          const errorData = await response.json();
+          console.log('Error data:', errorData);
+        } catch (e) {
+          console.log('Could not parse error response');
+        }
+        
         deleteCookie('accessToken');
         setUser(null);
-        // Optional: redirect to login
-        // navigate('/login');
       }
       
       setLoading(false);
+      setAuthChecked(true);
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('❌ Auth check failed:', error);
+      console.error('Error details:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
       setUser(null);
       setLoading(false);
+      setAuthChecked(true);
     }
   };
 
@@ -464,10 +497,6 @@ export default function ProductManagement() {
 
       console.log('=== SUBMITTING PRODUCT ===');
       console.log('URL:', `${API_BASE_URL}/products/add-product`);
-      console.log('FormData contents:');
-      for (let [key, value] of formData.entries()) {
-        console.log(`  ${key}:`, value);
-      }
       
       // Send request
       const response = await fetch(`${API_BASE_URL}/products/add-product`, {
@@ -664,15 +693,6 @@ export default function ProductManagement() {
         editProduct.newImages.forEach(image => {
           formData.append('images', image);
         });
-
-        console.log('Sending FormData with:');
-        console.log('title:', editProduct.name.trim());
-        console.log('sku:', editProduct.sku.trim());
-        console.log('price:', parseFloat(editProduct.price));
-        console.log('stock:', parseInt(editProduct.stock));
-        console.log('featured:', editProduct.featured);
-        console.log('collectionId:', editProduct.collection);
-        console.log('existingImages:', existingImages);
 
         const response = await fetch(`${API_BASE_URL}/products/update-product/${editProduct.id}`, {
           method: 'PUT',
@@ -895,19 +915,19 @@ export default function ProductManagement() {
   };
 
   // Loading state
-  if (loading) {
+  if (loading || !authChecked) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-sm sm:text-base">Loading...</p>
+          <p className="text-gray-600 text-sm sm:text-base">Verifying authentication...</p>
         </div>
       </div>
     );
   }
 
   // Access denied for non-admin users
-  if (!user && !loading) {
+  if (!user || user.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 max-w-md w-full text-center">
@@ -917,7 +937,9 @@ export default function ProductManagement() {
             </svg>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600 text-sm sm:text-base mb-6">You don't have permission to access the Product Management panel. This area is restricted to administrators only.</p>
+          <p className="text-gray-600 text-sm sm:text-base mb-6">
+            You don't have permission to access the Product Management panel. This area is restricted to administrators only.
+          </p>
           <button
             onClick={() => navigate('/login')}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
