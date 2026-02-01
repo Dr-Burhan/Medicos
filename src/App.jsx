@@ -60,9 +60,9 @@ const AppContent = () => {
         <Route 
           path="/admin/collections" 
           element={
-          
+            <ProtectedRoute requiredRole="admin">
               <CollectionManagement />
-            
+            </ProtectedRoute>
           } 
         />
         
