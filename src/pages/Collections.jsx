@@ -15,7 +15,7 @@ const getImageUrl = (imageData) => {
 const API = {
   getCollections: async () => {
     try {
-      const response = await axios.get( "http://localhost:8000/api/collections/get-collections" );
+      const response = await axios.get( `${import.meta.env.VITE_API_BASE_URL}/collections/get-collections` );
       return { success: response.data.success, data: response.data.data || [] };
     } catch (error) {
       console.error('Error fetching collections:', error);

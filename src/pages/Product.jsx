@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCartSidebar } from '../context/CartSidebarContext';
 import { toast } from 'react-toastify';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 // Helper function to extract image URL from product
 const getImageUrl = (imageData) => {

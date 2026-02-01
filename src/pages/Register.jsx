@@ -40,7 +40,7 @@ export default function SignupForm() {
     setError("");
 
     try {
-      const response = await axios.post("http://localhost:8000/api/user/register", formData);
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/register`, formData);
       
       console.log("Registration successful:", response.data);
       

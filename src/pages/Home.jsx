@@ -10,7 +10,7 @@ import { useCartSidebar } from "../context/CartSidebarContext"
 import { toast } from "react-toastify"
 import HomePageWrapper from "./Homepagewrapper"
 
-const API_BASE = 'http://localhost:8000/api'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
 // Helper function to extract image URL from product
 const getImageUrl = (imageData) => {

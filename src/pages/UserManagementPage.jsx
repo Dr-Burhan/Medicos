@@ -24,7 +24,7 @@ const UserManagementPage = () => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/user/me', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user/me`, {
         method: 'GET',
         credentials: "include",
         headers: {
@@ -48,7 +48,7 @@ const UserManagementPage = () => {
   const fetchAllUsers = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/user/get-allusers",
+        `${import.meta.env.VITE_API_BASE_URL}/user/get-allusers`,
         {
           method: "GET",
           credentials: "include",
@@ -85,7 +85,7 @@ const UserManagementPage = () => {
 
   const handleUpdateUserRole = async (userId, newRole) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/admin/user/update-role/${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/user/update-role/${userId}`, {
         method: 'PUT',
         credentials: "include",
         headers: {
@@ -115,7 +115,7 @@ const UserManagementPage = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/api/admin/user/delete-user/${userId}`, {
+      const response = await fetch(``${import.meta.env.VITE_API_BASE_URL}/admin/user/delete-user/${userId}`, {
         method: 'DELETE',
         credentials: "include",
         headers: {

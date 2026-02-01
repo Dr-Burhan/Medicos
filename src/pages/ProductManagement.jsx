@@ -103,7 +103,7 @@ export default function ProductManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage, setProductsPerPage] = useState(10);
 
-  const API_BASE_URL = 'http://localhost:8000/api';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
   // Check auth on mount
   useEffect(() => {

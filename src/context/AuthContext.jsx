@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 // Configure axios to send cookies with requests
 axios.defaults.withCredentials = true;
