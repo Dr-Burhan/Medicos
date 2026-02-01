@@ -8,7 +8,9 @@ export default function Footer() {
 
         {/* Brand */}
         <div>
-          <h2 className="text-2xl font-semibold text-white mb-4">FurniStore</h2>
+          <span className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                Medicos
+              </span>
           <p className="text-sm">
             Premium furniture crafted with elegance, comfort,
             and timeless design. Transform your space with us.

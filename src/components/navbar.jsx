@@ -122,7 +122,7 @@ const Navbar = ({ onCartClick }) => {
             </motion.div>
 
             {/* Desktop Menu - Hidden on Mobile and Tablet */}
-            <div className="hidden lg:flex items-center gap-4 xl:gap-8">
+            <div className="hidden lg:flex items-center cursor-pointer gap-4 xl:gap-8">
               {menuItems.map((item) => (
                 <motion.button
                   key={item.label}
@@ -310,9 +310,9 @@ const Navbar = ({ onCartClick }) => {
 
                 {/* Menu Items */}
                 <div className="flex-1 overflow-y-auto">
-                  <div className="p-2 sm:p-3">
+                  <div className="p-2 sm:p-3 ">
                     {/* Main Navigation */}
-                    <div className="mb-2">
+                    <div className="mb-2 cursor-pointer">
                       {menuItems.map((item) => (
                         <motion.button
                           key={item.label}

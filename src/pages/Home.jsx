@@ -195,6 +195,7 @@ export default function Home() {
                 className="bg-white/70 hover:bg-white/90 text-accent-foreground px-8 py-3 rounded-full font-bold transition-all"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={()=>navigate('/collection')}
               >
                 Shop Now
               </motion.button>
@@ -202,6 +203,7 @@ export default function Home() {
                 className="border border-black/80 bg-black/80  text-white px-8 py-3 rounded-full font-bold hover:bg-black/50 transition-all"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={()=>navigate('/collections')}
               >
                 View Collection
               </motion.button>
