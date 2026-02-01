@@ -10,8 +10,8 @@
     </filter>
   </defs>
   
-  <!-- Background rounded rectangle -->
-  <rect width="40" height="40" rx="4" fill="url(#blueGradient)" filter="url(#shadow)"/>
+  <!-- Background rounded rectangle with larger border radius -->
+  <rect width="40" height="40" rx="8" fill="url(#blueGradient)" filter="url(#shadow)"/>
   
   <!-- Icon centered in the background -->
   <g transform="translate(10, 10)">
