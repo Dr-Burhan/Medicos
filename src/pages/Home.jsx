@@ -76,7 +76,7 @@ export default function Home() {
       icon: Shield,
       title: "Uncompromising Quality",
       description:
-        "Every sofa is meticulously crafted using only the finest materials for lasting comfort and durability.",
+        "Every product is meticulously crafted using only the finest materials for lasting comfort and durability.",
     },
     {
       icon: Users,
@@ -97,7 +97,7 @@ export default function Home() {
     {
       icon: DollarSign,
       title: "Exceptional Value",
-      description: "Offering premium quality sofas at fair prices, ensuring you get the best for your investment.",
+      description: "Offering premium quality products at fair prices, ensuring you get the best for your investment.",
     },
   ]
 
