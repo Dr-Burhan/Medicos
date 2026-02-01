@@ -12,7 +12,10 @@ const UserManagementTab = ({
   selectedUserForEdit,
   setSelectedUserForEdit,
   handleUpdateUserRole,
-  handleDeleteUser
+  handleDeleteUser,
+  isLoadingUsers,
+  isUpdatingRole,
+  isDeletingUser
 }) => {
   // Pagination logic
   const indexOfLastUser = currentPage * usersPerPage;
@@ -29,10 +32,11 @@ const UserManagementTab = ({
         </div>
         <button
           onClick={fetchAllUsers}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          disabled={isLoadingUsers}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
         >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
+          <RefreshCw className={`w-4 h-4 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+          {isLoadingUsers ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
@@ -41,7 +45,7 @@ const UserManagementTab = ({
         <p className="text-sm text-blue-800">
           Total users loaded: {allUsers.length}
         </p>
-        {allUsers.length === 0 && (
+        {allUsers.length === 0 && !isLoadingUsers && (
           <p className="text-sm text-blue-600 mt-2">
             No users found. Check browser console for API response details.
           </p>
@@ -58,7 +62,8 @@ const UserManagementTab = ({
               setUsersPerPage(Number(e.target.value));
               setCurrentPage(1);
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white text-sm"
+            disabled={isLoadingUsers}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
             <option value={5}>5 users</option>
             <option value={10}>10 users</option>
@@ -84,7 +89,16 @@ const UserManagementTab = ({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {currentUsers.length > 0 ? (
+              {isLoadingUsers ? (
+                <tr>
+                  <td colSpan="4" className="px-4 sm:px-6 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                      <p className="text-gray-600 text-lg">Loading users...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : currentUsers.length > 0 ? (
                 currentUsers.map((u) => (
                   <tr key={u._id || u.id} className="hover:bg-gray-50">
                     <td className="px-4 sm:px-6 py-4">
@@ -112,7 +126,7 @@ const UserManagementTab = ({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setSelectedUserForEdit(u)}
-                          disabled={u._id === user._id || u.id === user.id}
+                          disabled={u._id === user._id || u.id === user.id || isUpdatingRole || isDeletingUser}
                           className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-xs sm:text-sm"
                         >
                           Edit
@@ -120,9 +134,10 @@ const UserManagementTab = ({
                         {(u._id !== user._id && u.id !== user.id) && (
                           <button
                             onClick={() => handleDeleteUser(u._id || u.id)}
-                            className="px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-xs sm:text-sm"
+                            disabled={isUpdatingRole || isDeletingUser}
+                            className="px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-xs sm:text-sm"
                           >
-                            Delete
+                            {isDeletingUser ? 'Deleting...' : 'Delete'}
                           </button>
                         )}
                       </div>
@@ -146,7 +161,7 @@ const UserManagementTab = ({
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {totalPages > 1 && !isLoadingUsers && (
         <div className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-200 px-4 py-3">
           <div className="text-sm text-gray-600">
             Showing {indexOfFirstUser + 1} to {Math.min(indexOfLastUser, allUsers.length)} of {allUsers.length} users
@@ -214,7 +229,8 @@ const UserManagementTab = ({
             <div className="space-y-3 mb-6">
               <button
                 onClick={() => handleUpdateUserRole(selectedUserForEdit._id || selectedUserForEdit.id, 'user')}
-                className={`w-full px-4 py-3 rounded-lg border-2 transition-all ${
+                disabled={isUpdatingRole}
+                className={`w-full px-4 py-3 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                   selectedUserForEdit.role === 'user'
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                     : 'border-gray-200 hover:border-gray-300'
@@ -237,7 +253,8 @@ const UserManagementTab = ({
 
               <button
                 onClick={() => handleUpdateUserRole(selectedUserForEdit._id || selectedUserForEdit.id, 'admin')}
-                className={`w-full px-4 py-3 rounded-lg border-2 transition-all ${
+                disabled={isUpdatingRole}
+                className={`w-full px-4 py-3 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                   selectedUserForEdit.role === 'admin'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
                     : 'border-gray-200 hover:border-gray-300'
@@ -262,9 +279,17 @@ const UserManagementTab = ({
               </button>
             </div>
 
+            {isUpdatingRole && (
+              <div className="mb-4 flex items-center justify-center gap-2 text-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm">Updating role...</span>
+              </div>
+            )}
+
             <button
               onClick={() => setSelectedUserForEdit(null)}
-              className="w-full px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              disabled={isUpdatingRole}
+              className="w-full px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               Cancel
             </button>

@@ -128,23 +128,56 @@ export default function ProductManagement() {
     setCurrentPage(1);
   }, [searchTerm, priceFilter, sortFilter, stockFilter, featuredFilter, productsPerPage]);
 
-  // Check if user is authenticated and is admin
+  // ✅ FIXED: Properly verify token with backend
   const checkAuth = async () => {
     try {
       const token = getCookie('accessToken');
       
       if (!token) {
-        console.log('No token found, access denied');
+        console.log('No token found, redirecting to login');
+        setUser(null);
         setLoading(false);
+        // Optional: redirect to login page
+        // navigate('/login');
         return;
       }
       
-      console.log('Token found, granting access');
-      // If token exists, user is authenticated
-      setUser({ id: 'user', name: 'Admin User', role: 'admin' });
+      console.log('Token found, verifying with backend...');
+      
+      // ✅ VERIFY TOKEN WITH BACKEND
+      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('Auth verified:', userData);
+        
+        // Check if user is admin
+        if (userData.user && userData.user.role === 'admin') {
+          setUser(userData.user);
+          console.log('✅ Admin access granted');
+        } else {
+          console.log('❌ User is not admin');
+          setUser(null);
+        }
+      } else {
+        console.log('❌ Token verification failed');
+        deleteCookie('accessToken');
+        setUser(null);
+        // Optional: redirect to login
+        // navigate('/login');
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error('Auth check failed:', error);
+      setUser(null);
       setLoading(false);
     }
   };
@@ -464,7 +497,7 @@ export default function ProductManagement() {
         console.error(text.substring(0, 500));
         
         // Show user-friendly error
-        alert('Server error: The backend crashed or returned an error page. Check the browser console and backend console for details.');
+        toast.error('Server error: The backend crashed or returned an error page');
         setIsSubmitting(false);
         return; // Stop here, don't continue
       }
@@ -506,11 +539,11 @@ export default function ProductManagement() {
       
       // More specific error messages
       if (error.message.includes('JSON')) {
-        alert('Error: Backend returned invalid data. This usually means the backend crashed. Check backend console.');
+        toast.error('Backend returned invalid data');
       } else if (error.message.includes('Failed to fetch')) {
-        alert('Error: Cannot connect to backend. Make sure the backend server is running on port 8000.');
+        toast.error('Cannot connect to backend');
       } else {
-        alert(`Error: ${error.message}`);
+        toast.error(`Error: ${error.message}`);
       }
     } finally {
       setIsSubmitting(false);
@@ -699,7 +732,7 @@ export default function ProductManagement() {
         });
 
         if (response.ok) {
-        toast.success('Product updated successfully!');
+          toast.success('Product updated successfully!');
           setShowEditProductModal(false);
           setEditProduct(null);
           await fetchProducts();
@@ -885,6 +918,12 @@ export default function ProductManagement() {
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
           <p className="text-gray-600 text-sm sm:text-base mb-6">You don't have permission to access the Product Management panel. This area is restricted to administrators only.</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );
