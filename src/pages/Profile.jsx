@@ -53,7 +53,7 @@ const ProfilePage = () => {
   const fetchUserProfile = async () => {
     try {
       console.log('Fetching user profile...');
-      const response = await fetch('`${import.meta.env.VITE_API_BASE_URL}/user/me', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user/me`, {
         method: 'GET',
         credentials: "include",
         headers: {
@@ -85,7 +85,7 @@ const ProfilePage = () => {
   const fetchAdminStats = async () => {
     try {
       console.log('Fetching admin stats...');
-      const response = await fetch("`${import.meta.env.VITE_API_BASE_URL}/admin/stats", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/stats`, {
         method: "GET",
         credentials: "include",
         headers: {
@@ -118,7 +118,7 @@ const ProfilePage = () => {
     try {
       console.log('Fetching all users...');
       const response = await fetch(
-        "`${import.meta.env.VITE_API_BASE_URL}/user/get-allusers",
+        `${import.meta.env.VITE_API_BASE_URL}/user/get-allusers`,
         {
           method: "GET",
           credentials: "include",
@@ -166,7 +166,7 @@ const ProfilePage = () => {
     try {
       console.log('Updating profile with data:', editedUser);
       
-      const response = await fetch('`${import.meta.env.VITE_API_BASE_URL}/user/me', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user/me`, {
         method: 'PUT',
         credentials: "include",
         headers: {
@@ -205,7 +205,7 @@ const ProfilePage = () => {
     try {
       console.log(`Updating user ${userId} role to ${newRole}`);
       
-      const response = await fetch(``${import.meta.env.VITE_API_BASE_URL}/admin/user/update-role/${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/user/update-role/${userId}`, {
         method: 'PUT',
         credentials: "include",
         headers: {
@@ -242,7 +242,7 @@ const ProfilePage = () => {
     try {
       console.log(`Deleting user ${userId}`);
       
-      const response = await fetch(``${import.meta.env.VITE_API_BASE_URL}/admin/user/delete-user/${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/user/delete-user/${userId}`, {
         method: 'DELETE',
         credentials: "include",
         headers: {
@@ -289,7 +289,7 @@ const ProfilePage = () => {
     try {
       console.log('Changing password...');
       
-      const response = await fetch('`${import.meta.env.VITE_API_BASE_URL}/user/change-password', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user/change-password`, {
         method: 'PUT',
         credentials: "include",
         headers: {
@@ -327,7 +327,7 @@ const ProfilePage = () => {
     try {
       console.log('Logging out...');
       
-      await fetch('`${import.meta.env.VITE_API_BASE_URL}/user/logout', {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL}/user/logout`, {
         method: 'POST',
         credentials: "include",
       });

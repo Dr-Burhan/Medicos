@@ -115,7 +115,7 @@ const UserManagementPage = () => {
     }
 
     try {
-      const response = await fetch(``${import.meta.env.VITE_API_BASE_URL}/admin/user/delete-user/${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/user/delete-user/${userId}`, {
         method: 'DELETE',
         credentials: "include",
         headers: {
