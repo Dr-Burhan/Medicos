@@ -56,9 +56,11 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data.user);
         setIsAuthenticated(true);
         return { success: true, user: response.data.user };
+      } else {
+        return { success: false, error: 'Login failed' };
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed';
+      const errorMessage = error.response?.data?.message || 'Invalid credentials. Please try again.';
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
@@ -78,9 +80,11 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data.user);
         setIsAuthenticated(true);
         return { success: true, user: response.data.user };
+      } else {
+        return { success: false, error: 'Registration failed' };
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed';
+      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
@@ -95,22 +99,22 @@ export const AuthProvider = ({ children }) => {
         `${API_BASE_URL}/user/logout`,
         {},
         { withCredentials: true }
-
       );
       toast.success("Logged out successfully!", {
-                                  position: "top-right",
-                                  autoClose: 3000,});
+        position: "top-right",
+        autoClose: 3000,
+      });
       
     } catch (error) {
       console.error('Logout error:', error);
       toast.error("Error during logout. Please try again.", {
-                                  position: "top-right",
-                                  autoClose: 3000,
-                                  hideProgressBar: false,
-                                  closeOnClick: true,
-                                  pauseOnHover: true,
-                                  draggable: true,
-                                });
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     } finally {
       setUser(null);
       setIsAuthenticated(false);

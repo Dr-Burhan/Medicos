@@ -31,39 +31,45 @@ export default function LoginForm() {
     try {
       const response = await login(formData.email, formData.password);
       
-      // Immediately fetch cart after successful login
-      await fetchCart();
-      
-      toast.success("Login successful! Welcome back.", {
+      // Check if login was successful
+      if (response.success) {
+        // Immediately fetch cart after successful login
+        await fetchCart();
+        
+        toast.success("Login successful! Welcome back.", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+
+        console.log("Login successful:", response.user);
+        
+        // Navigate to home
+        navigate("/");
+      } else {
+        // Login failed - show error message
+        toast.error(response.error || "Invalid credentials. Please try again.", {
+          position: "top-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+    } catch (err) {
+      // This catch block handles unexpected errors
+      toast.error("An unexpected error occurred. Please try again.", {
         position: "top-right",
-        autoClose: 3000,
+        autoClose: 4000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
       });
-
-      console.log("Login successful:", response.data);
-      
-      // Navigate to home
-      navigate("/");
-    } catch (err) {
-      if (err.response) {
-        toast.error(err.response.data.message || "Login failed. Please try again.", {
-          position: "top-right",
-          autoClose: 4000,
-        });
-      } else if (err.request) {
-        toast.error("Network error. Please check your connection.", {
-          position: "top-right",
-          autoClose: 4000,
-        });
-      } else {
-        toast.error("An error occurred. Please try again.", {
-          position: "top-right",
-          autoClose: 4000,
-        });
-      }
       console.error("Login error:", err);
     } finally {
       setIsLoading(false);
@@ -77,9 +83,7 @@ export default function LoginForm() {
         <div className="w-full max-w-md space-y-8">
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-6">
-             
-
-             <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center shadow-md">
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
