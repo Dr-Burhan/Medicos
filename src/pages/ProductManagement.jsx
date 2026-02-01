@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Tag, Box, Search, Filter, RefreshCw, Eye, Edit, Trash2, MoreVertical, Plus, X, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Tag, Box, Search, Filter, RefreshCw, Eye, Edit, Trash2, MoreVertical, Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from "react-router-dom"
 import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
+import axios from 'axios';
 
+// Configure axios to send cookies
+axios.defaults.withCredentials = true;
 
 const ProductImage = ({ image, alt = "Product", size = "medium" }) => {
-  // Handle image object with url property
   let imageUrl = null;
   
   if (typeof image === 'string') {
-    // String URL
     if (image.startsWith('http://') || image.startsWith('https://')) {
       imageUrl = image;
     }
   } else if (image && typeof image === 'object' && image.url) {
-    // Image object with url property
     imageUrl = image.url;
   }
   
@@ -41,33 +42,12 @@ const ProductImage = ({ image, alt = "Product", size = "medium" }) => {
   );
 };
 
-
-// Utility function to get cookie value
-const getCookie = (name) => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
-};
-
-// Utility function to delete cookie
-const deleteCookie = (name) => {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-};
-
-// Utility function to set cookie
-const setCookie = (name, value, days = 7) => {
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-};
-
 export default function ProductManagement() {
-
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
+  
+  // ✅ USE AUTH CONTEXT INSTEAD OF MANUAL TOKEN CHECKING
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+  
   const [products, setProducts] = useState([]);
   const [collections, setCollections] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,7 +56,6 @@ export default function ProductManagement() {
   const [stockFilter, setStockFilter] = useState('All Stock');
   const [featuredFilter, setFeaturedFilter] = useState('All Products');
   const [showActions, setShowActions] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: '',
@@ -90,7 +69,6 @@ export default function ProductManagement() {
     imagePreviews: [],
     collection: ''
   });
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [showEditProductModal, setShowEditProductModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [stats, setStats] = useState({
@@ -99,25 +77,19 @@ export default function ProductManagement() {
     lowStock: 0
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage, setProductsPerPage] = useState(10);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
-  // Check auth on mount
+  // Fetch products when user is authenticated and is admin
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  // Fetch products when user is authenticated
-  useEffect(() => {
-    if (user && user.role === 'admin') {
+    if (!authLoading && user && user.role === 'admin') {
+      console.log('✅ Admin user detected, fetching products...');
       fetchProducts();
       fetchCollections();
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   // Update stats when products change
   useEffect(() => {
@@ -129,97 +101,10 @@ export default function ProductManagement() {
     setCurrentPage(1);
   }, [searchTerm, priceFilter, sortFilter, stockFilter, featuredFilter, productsPerPage]);
 
-  // ✅ FIXED: Properly verify token with backend
-  const checkAuth = async () => {
-    try {
-      const token = getCookie('accessToken');
-      
-      if (!token) {
-        console.log('❌ No token found');
-        setUser(null);
-        setLoading(false);
-        setAuthChecked(true);
-        return;
-      }
-      
-      console.log('🔍 Token found, verifying with backend...');
-      
-      // ✅ VERIFY TOKEN WITH BACKEND
-      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-
-      console.log('📡 Auth verification response status:', response.status);
-
-      if (response.ok) {
-        const userData = await response.json();
-        console.log('✅ Auth verified, user data:', userData);
-        
-        // ✅ FIX: Check user role correctly
-        // Handle different response formats
-        let userObj = null;
-        
-        if (userData.user) {
-          userObj = userData.user;
-        } else if (userData.data && userData.data.user) {
-          userObj = userData.data.user;
-        } else if (userData.role) {
-          // Sometimes the response IS the user object
-          userObj = userData;
-        }
-        
-        console.log('👤 User object:', userObj);
-        console.log('🔑 User role:', userObj?.role);
-        
-        // Check if user is admin
-        if (userObj && userObj.role === 'admin') {
-          setUser(userObj);
-          console.log('✅ Admin access granted');
-        } else {
-          console.log('❌ User is not admin. Role:', userObj?.role);
-          setUser(null);
-          deleteCookie('accessToken');
-        }
-      } else {
-        console.log('❌ Token verification failed, status:', response.status);
-        
-        // Try to parse error response
-        try {
-          const errorData = await response.json();
-          console.log('Error data:', errorData);
-        } catch (e) {
-          console.log('Could not parse error response');
-        }
-        
-        deleteCookie('accessToken');
-        setUser(null);
-      }
-      
-      setLoading(false);
-      setAuthChecked(true);
-    } catch (error) {
-      console.error('❌ Auth check failed:', error);
-      console.error('Error details:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
-      setUser(null);
-      setLoading(false);
-      setAuthChecked(true);
-    }
-  };
-
   // Transform backend product data to frontend format
   const transformProduct = (backendProduct) => {
     const images = backendProduct.images || [];
     
-    // Extract first image - handle both string URLs and image objects
     let firstImage = null;
     if (images.length > 0) {
       const firstImg = images[0];
@@ -246,62 +131,57 @@ export default function ProductManagement() {
     };
   };
 
-  // Fetch all products
+  // Fetch all products using axios with cookies
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/products/get-allproducts`);
+      const response = await axios.get(`${API_BASE_URL}/products/get-allproducts`, {
+        withCredentials: true
+      });
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Handle different response formats
+      console.log('Products response:', response.data);
+
+      if (response.data) {
         let productsData = [];
         
-        if (Array.isArray(data)) {
-          productsData = data;
-        } else if (data.products && Array.isArray(data.products)) {
-          productsData = data.products;
-        } else if (data.data && Array.isArray(data.data)) {
-          productsData = data.data;
+        if (Array.isArray(response.data)) {
+          productsData = response.data;
+        } else if (response.data.products && Array.isArray(response.data.products)) {
+          productsData = response.data.products;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          productsData = response.data.data;
         }
 
-        // Transform products to match frontend format
         const transformedProducts = productsData.map(transformProduct);
         setProducts(transformedProducts);
-        console.log('Products loaded:', transformedProducts.length);
-      } else {
-        console.error('Failed to fetch products:', response.status);
-        toast.error('Error loading products');
+        console.log('✅ Products loaded:', transformedProducts.length);
       }
     } catch (error) {
-      console.error('Failed to fetch products:', error);
+      console.error('❌ Failed to fetch products:', error);
+      toast.error('Error loading products');
     }
   };
 
   // Fetch all collections
   const fetchCollections = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/collections/get-collections`);
+      const response = await axios.get(`${API_BASE_URL}/collections/get-collections`, {
+        withCredentials: true
+      });
 
-      if (response.ok) {
-        const data = await response.json();
-        
+      if (response.data) {
         let collectionsData = [];
-        if (Array.isArray(data)) {
-          collectionsData = data;
-        } else if (data.collections && Array.isArray(data.collections)) {
-          collectionsData = data.collections;
-        } else if (data.data && Array.isArray(data.data)) {
-          collectionsData = data.data;
+        if (Array.isArray(response.data)) {
+          collectionsData = response.data;
+        } else if (response.data.collections && Array.isArray(response.data.collections)) {
+          collectionsData = response.data.collections;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          collectionsData = response.data.data;
         }
         setCollections(collectionsData);
-        console.log('Collections loaded:', collectionsData.length);
-      } else {
-        console.error('Failed to fetch collections:', response.status);
-        setCollections([]);
+        console.log('✅ Collections loaded:', collectionsData.length);
       }
     } catch (error) {
-      console.error('Failed to fetch collections:', error);
+      console.error('❌ Failed to fetch collections:', error);
       toast.error('Failed to fetch collections');
       setCollections([]);
     }
@@ -331,13 +211,11 @@ export default function ProductManagement() {
     const currentImages = Array.from(newProduct.images);
     const currentPreviews = [...newProduct.imagePreviews];
 
-    // Check total limit (existing + new)
     if (currentImages.length + files.length > 5) {
       toast.error(`You can only upload up to 5 images. Current: ${currentImages.length}, trying to add: ${files.length}`);
       return;
     }
 
-    // Validate file types
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     const invalidFiles = files.filter(file => !validTypes.includes(file.type));
     
@@ -346,8 +224,7 @@ export default function ProductManagement() {
       return;
     }
 
-    // Validate file sizes (e.g., max 5MB per image)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     const oversizedFiles = files.filter(file => file.size > maxSize);
     
     if (oversizedFiles.length > 0) {
@@ -355,7 +232,6 @@ export default function ProductManagement() {
       return;
     }
 
-    // Create preview URLs and APPEND to existing images
     const newPreviews = files.map(file => URL.createObjectURL(file));
     
     setNewProduct({
@@ -370,7 +246,6 @@ export default function ProductManagement() {
     const newImages = [...newProduct.images];
     const newPreviews = [...newProduct.imagePreviews];
     
-    // Revoke the preview URL to free memory
     URL.revokeObjectURL(newPreviews[index]);
     
     newImages.splice(index, 1);
@@ -390,13 +265,11 @@ export default function ProductManagement() {
     const currentNewPreviews = editProduct.newImagePreviews || [];
     const allImages = (editProduct.images || []).length + currentNewImages.length;
 
-    // Check total limit (existing + new)
     if (allImages + files.length > 5) {
       toast.error(`You can only upload up to 5 images total. Current: ${allImages}, trying to add: ${files.length}`);
       return;
     }
 
-    // Validate file types
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     const invalidFiles = files.filter(file => !validTypes.includes(file.type));
     
@@ -405,7 +278,6 @@ export default function ProductManagement() {
       return;
     }
 
-    // Validate file sizes (max 5MB per image)
     const maxSize = 5 * 1024 * 1024;
     const oversizedFiles = files.filter(file => file.size > maxSize);
     
@@ -414,7 +286,6 @@ export default function ProductManagement() {
       return;
     }
 
-    // Create preview URLs and append to new images
     const newPreviews = files.map(file => URL.createObjectURL(file));
     
     setEditProduct({
@@ -424,7 +295,7 @@ export default function ProductManagement() {
     });
   };
 
-  // Remove image from edit product (both existing and new)
+  // Remove image from edit product
   const handleRemoveEditImage = (index, isExisting = false) => {
     if (isExisting) {
       const newImages = [...editProduct.images];
@@ -450,20 +321,17 @@ export default function ProductManagement() {
   const handleAddProduct = async (e) => {
     e.preventDefault();
     
-    // Prevent double submission
     if (isSubmitting) return;
     
     try {
       setIsSubmitting(true);
       
-      // Validate images
       if (!newProduct.images || newProduct.images.length === 0) {
         toast.error('Please select at least one image');
         setIsSubmitting(false);
         return;
       }
 
-      // Validate collection
       if (!newProduct.collection) {
         toast.error('Please select a category');
         setIsSubmitting(false);
@@ -472,14 +340,12 @@ export default function ProductManagement() {
 
       const formData = new FormData();
       
-      // Append text fields
       formData.append('title', newProduct.name);
       formData.append('price', parseFloat(newProduct.price));
       formData.append('stock', parseInt(newProduct.stock));
       formData.append('description', newProduct.description);
       formData.append('collectionId', newProduct.collection);
       
-      // Optional fields
       if (newProduct.deliveryTime) {
         formData.append('deliveryTime', newProduct.deliveryTime);
       }
@@ -490,56 +356,27 @@ export default function ProductManagement() {
         formData.append('sku', newProduct.sku);
       }
       
-      // Append image files
       newProduct.images.forEach((image) => {
         formData.append('images', image);
       });
 
       console.log('=== SUBMITTING PRODUCT ===');
-      console.log('URL:', `${API_BASE_URL}/products/add-product`);
       
-      // Send request
-      const response = await fetch(`${API_BASE_URL}/products/add-product`, {
-        method: 'POST',
-        body: formData,
+      // ✅ USE AXIOS WITH COOKIES
+      const response = await axios.post(`${API_BASE_URL}/products/add-product`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      console.log('Response status:', response.status, response.statusText);
+      console.log('✅ Product added:', response.data);
       
-      // ✅ CHECK CONTENT TYPE BEFORE PARSING
-      const contentType = response.headers.get('content-type');
-      console.log('Response Content-Type:', contentType);
-
-      let data;
-      
-      // Check if response is JSON or HTML
-      if (contentType && contentType.includes('application/json')) {
-        // Response is JSON - safe to parse
-        data = await response.json();
-        console.log('Response data:', data);
-      } else {
-        // Response is HTML (error page) - don't try to parse as JSON
-        const text = await response.text();
-        console.error('❌ BACKEND RETURNED HTML INSTEAD OF JSON!');
-        console.error('Response status:', response.status);
-        console.error('First 500 characters of response:');
-        console.error(text.substring(0, 500));
-        
-        // Show user-friendly error
-        toast.error('Server error: The backend crashed or returned an error page');
-        setIsSubmitting(false);
-        return; // Stop here, don't continue
-      }
-      
-      // Handle JSON response
-      if (response.ok && data.success) {
-        console.log('✅ Product added successfully!');
+      if (response.data.success) {
         toast.success('Product added successfully!');
         
-        // Clean up preview URLs
         newProduct.imagePreviews.forEach(url => URL.revokeObjectURL(url));
         
-        // Reset form
         setNewProduct({
           name: '',
           sku: '',
@@ -556,20 +393,15 @@ export default function ProductManagement() {
         setShowAddProductModal(false);
         await fetchProducts();
       } else {
-        // Server returned JSON but with an error
-        console.error('❌ Server error:', data);
-        toast.error(`Failed to add product: ${data.message || data.error || 'Unknown error'}`);
+        toast.error(`Failed to add product: ${response.data.message || 'Unknown error'}`);
       }
       
     } catch (error) {
       console.error('❌ ADD PRODUCT ERROR:', error);
-      console.error('Error type:', error.name);
-      console.error('Error message:', error.message);
       
-      // More specific error messages
-      if (error.message.includes('JSON')) {
-        toast.error('Backend returned invalid data');
-      } else if (error.message.includes('Failed to fetch')) {
+      if (error.response) {
+        toast.error(`Error: ${error.response.data.message || error.response.statusText}`);
+      } else if (error.request) {
         toast.error('Cannot connect to backend');
       } else {
         toast.error(`Error: ${error.message}`);
@@ -584,20 +416,12 @@ export default function ProductManagement() {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const token = getCookie('accessToken');
-      const response = await fetch(`${API_BASE_URL}/products/delete-product/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      await axios.delete(`${API_BASE_URL}/products/delete-product/${productId}`, {
+        withCredentials: true
       });
 
-      if (response.ok) {
-        toast.success('Product deleted successfully');
-        await fetchProducts();
-      } else {
-        toast.error('Failed to delete product');
-      }
+      toast.success('Product deleted successfully');
+      await fetchProducts();
     } catch (error) {
       console.error('Delete failed:', error);
       toast.error(`Error deleting product: ${error.message}`);
@@ -624,15 +448,13 @@ export default function ProductManagement() {
     setShowEditProductModal(true);
   };
 
-  // Handle update product with image upload support
+  // Handle update product
   const handleUpdateProduct = async (e) => {
     e.preventDefault();
     
     try {
       setIsSubmitting(true);
-      const token = getCookie('accessToken');
       
-      // Validation
       if (!editProduct.name.trim()) {
         toast.error('Product name is required');
         setIsSubmitting(false);
@@ -646,24 +468,23 @@ export default function ProductManagement() {
       }
       
       if (!editProduct.price || parseFloat(editProduct.price) <= 0) {
-        toast.error('Valid price is required (must be greater than 0)');
+        toast.error('Valid price is required');
         setIsSubmitting(false);
         return;
       }
       
       if (!editProduct.stock || parseInt(editProduct.stock) < 0) {
-        toast.error('Stock quantity is required (must be 0 or greater)');
+        toast.error('Stock quantity is required');
         setIsSubmitting(false);
         return;
       }
       
       if (!editProduct.collection) {
-        toast.error('Please select a collection/category');
+        toast.error('Please select a collection');
         setIsSubmitting(false);
         return;
       }
       
-      // Check if at least one image exists
       const totalImages = (editProduct.images?.length || 0) + (editProduct.newImages?.length || 0);
       if (totalImages === 0) {
         toast.error('At least one product image is required');
@@ -671,7 +492,6 @@ export default function ProductManagement() {
         return;
       }
       
-      // Use FormData if there are new images, otherwise use JSON
       if (editProduct.newImages && editProduct.newImages.length > 0) {
         const formData = new FormData();
         formData.append('title', editProduct.name.trim());
@@ -683,52 +503,32 @@ export default function ProductManagement() {
         formData.append('featured', editProduct.featured === true ? 'true' : 'false');
         formData.append('collectionId', editProduct.collection.toString());
         
-        // Append existing images as JSON string
         const existingImages = Array.isArray(editProduct.images) ? editProduct.images : [];
         if (existingImages.length > 0) {
           formData.append('existingImages', JSON.stringify(existingImages));
         }
         
-        // Append new image files
         editProduct.newImages.forEach(image => {
           formData.append('images', image);
         });
 
-        const response = await fetch(`${API_BASE_URL}/products/update-product/${editProduct.id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          credentials: 'include',
-          body: formData
-        });
-
-        if (response.ok) {
-          toast.success('Product updated successfully!');
-          // Clean up preview URLs
-          (editProduct.newImagePreviews || []).forEach(url => URL.revokeObjectURL(url));
-          setShowEditProductModal(false);
-          setEditProduct(null);
-          await fetchProducts();
-        } else {
-          const contentType = response.headers.get('content-type');
-          let errorMessage = 'Unknown error';
-          
-          if (contentType && contentType.includes('application/json')) {
-            try {
-              const errorData = await response.json();
-              errorMessage = errorData?.message || errorData?.error || 'Unknown error';
-            } catch (e) {
-              errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        const response = await axios.put(
+          `${API_BASE_URL}/products/update-product/${editProduct.id}`,
+          formData,
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'multipart/form-data'
             }
-          } else {
-            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
           }
-          
-          toast.error(`Failed to update product: ${errorMessage}`);
-        }
+        );
+
+        toast.success('Product updated successfully!');
+        (editProduct.newImagePreviews || []).forEach(url => URL.revokeObjectURL(url));
+        setShowEditProductModal(false);
+        setEditProduct(null);
+        await fetchProducts();
       } else {
-        // No new images - use JSON
         const productData = {
           title: editProduct.name,
           sku: editProduct.sku,
@@ -741,42 +541,25 @@ export default function ProductManagement() {
           existingImages: Array.isArray(editProduct.images) ? editProduct.images : []
         };
 
-        const response = await fetch(`${API_BASE_URL}/products/update-product/${editProduct.id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify(productData)
-        });
-
-        if (response.ok) {
-          toast.success('Product updated successfully!');
-          setShowEditProductModal(false);
-          setEditProduct(null);
-          await fetchProducts();
-        } else {
-          const contentType = response.headers.get('content-type');
-          let errorMessage = 'Unknown error';
-          
-          if (contentType && contentType.includes('application/json')) {
-            try {
-              const errorData = await response.json();
-              errorMessage = errorData?.message || errorData?.error || 'Unknown error';
-            } catch (e) {
-              errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        await axios.put(
+          `${API_BASE_URL}/products/update-product/${editProduct.id}`,
+          productData,
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
             }
-          } else {
-            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
           }
-          
-          toast.error(`Failed to update product: ${errorMessage}`);
-        }
+        );
+
+        toast.success('Product updated successfully!');
+        setShowEditProductModal(false);
+        setEditProduct(null);
+        await fetchProducts();
       }
     } catch (error) {
       console.error('Update product error:', error);
-      toast.error(`Error updating product: ${error.message}`);
+      toast.error(`Error updating product: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -785,19 +568,13 @@ export default function ProductManagement() {
   // Toggle featured status
   const handleToggleFeatured = async (productId, currentStatus) => {
     try {
-      const token = getCookie('accessToken');
-      const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ featured: !currentStatus })
-      });
+      await axios.patch(
+        `${API_BASE_URL}/products/${productId}`,
+        { featured: !currentStatus },
+        { withCredentials: true }
+      );
 
-      if (response.ok) {
-        await fetchProducts();
-      }
+      await fetchProducts();
     } catch (error) {
       console.error('Toggle featured failed:', error);
     }
@@ -915,7 +692,7 @@ export default function ProductManagement() {
   };
 
   // Loading state
-  if (loading || !authChecked) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
@@ -954,26 +731,24 @@ export default function ProductManagement() {
   return (
     <div className="min-h-screen bg-gray-50"> 
       {/* Header */}
-  <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <p className="text-base sm:text-xl lg:text-3xl font-bold text-gray-900 hover:text-blue-600 truncate">
+              Products Management
+            </p>
+          </div>
 
-    <div className="flex items-center justify-between">
-      
-      <div className="flex items-center gap-3">
-          <p className="text-base sm:text-xl lg:text-3xl font-bold text-gray-900 hover:text-blue-600  truncate">
-          Products Management
-        </p>
+          {/* Desktop Admin Badge */}
+          <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
+            <span className="text-xs lg:text-sm font-medium text-gray-700">
+              Admin Panel
+            </span>
+            <span className="w-2 h-2 bg-green-500 rounded-full" />
+          </div>
+        </div>
       </div>
 
-      {/* Desktop Admin Badge */}
-      <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
-        <span className="text-xs lg:text-sm font-medium text-gray-700">
-          Admin Panel
-        </span>
-        <span className="w-2 h-2 bg-green-500 rounded-full" />
-      </div>
-    
-  </div>
-  </div>
       <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
@@ -1196,7 +971,6 @@ export default function ProductManagement() {
                                 onClick={() => setShowActions(null)}
                               ></div>
                               <div className={`absolute ${
-                                // If we're in the last 2 rows, show menu above the button
                                 index >= currentProducts.length - 2 ? 'bottom-full mb-2' : 'top-full mt-2'
                               } right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20 overflow-hidden`}>
                                 <button 

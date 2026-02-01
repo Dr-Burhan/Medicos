@@ -16,32 +16,36 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication on mount (verify JWT via cookie)
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // This endpoint should verify the JWT cookie and return user data
-        const response = await axios.get(`${API_BASE_URL}/user/me`, {
-          withCredentials: true,
-        });
-
-        if (response.data.success && response.data.user) {
-          setUser(response.data.user);
-          setIsAuthenticated(true);
-        } else {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.log('Not authenticated:', error.message);
-        // Don't set to false here - let the app check based on user state
-        setUser(null);
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     checkAuth();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      setLoading(true);
+      // This endpoint should verify the JWT cookie and return user data
+      const response = await axios.get(`${API_BASE_URL}/user/me`, {
+        withCredentials: true,
+      });
+
+      console.log('✅ Auth check response:', response.data);
+
+      if (response.data.success && response.data.user) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+        console.log('✅ User authenticated:', response.data.user);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+        console.log('❌ User not authenticated');
+      }
+    } catch (error) {
+      console.log('❌ Auth check failed:', error.message);
+      setUser(null);
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (email, password) => {
     try {
@@ -52,14 +56,18 @@ export const AuthProvider = ({ children }) => {
         { withCredentials: true }
       );
 
+      console.log('Login response:', response.data);
+
       if (response.data.success && response.data.user) {
         setUser(response.data.user);
         setIsAuthenticated(true);
+        console.log('✅ Login successful, user:', response.data.user);
         return { success: true, user: response.data.user };
       } else {
         return { success: false, error: 'Login failed' };
       }
     } catch (error) {
+      console.error('❌ Login error:', error);
       const errorMessage = error.response?.data?.message || 'Invalid credentials. Please try again.';
       return { success: false, error: errorMessage };
     } finally {
@@ -110,16 +118,17 @@ export const AuthProvider = ({ children }) => {
       toast.error("Error during logout. Please try again.", {
         position: "top-right",
         autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
       });
     } finally {
       setUser(null);
       setIsAuthenticated(false);
       setLoading(false);
     }
+  };
+
+  // Refresh auth - useful for after login/register to update all components
+  const refreshAuth = async () => {
+    await checkAuth();
   };
 
   const value = {
@@ -129,6 +138,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshAuth, // Export this so components can manually refresh
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
